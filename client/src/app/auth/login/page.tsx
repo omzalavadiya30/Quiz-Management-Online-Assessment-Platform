@@ -10,7 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ email: "", password: "", role: "STUDENT" });
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -62,8 +62,10 @@ export default function LoginPage() {
       }
 
       toast.success("Login successful.");
-      setForm({ email: "", password: "" });
-      router.push("/dashboard");
+      setForm({ email: "", password: "", role: "STUDENT" });
+
+      const userRole = data?.user?.role || form.role;
+      router.push(userRole === "ADMIN" ? "/admin/dashboard" : "/dashboard");
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Something went wrong";
       toast.error(message);
@@ -97,6 +99,26 @@ export default function LoginPage() {
               <p className="text-sm font-medium uppercase tracking-[0.25em] text-violet-300">Quiz platform</p>
               <h2 className="mt-2 text-3xl font-bold text-white">Login</h2>
             </div>
+          </div>
+
+          <div className="mb-6 grid grid-cols-2 gap-2 rounded-2xl border border-slate-700 bg-slate-950/60 p-1">
+            {[
+              { value: "STUDENT", label: "Student" },
+              { value: "ADMIN", label: "Admin" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setForm((prev) => ({ ...prev, role: option.value }))}
+                className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                  form.role === option.value
+                    ? "bg-violet-500 text-white shadow-lg shadow-violet-500/20"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">

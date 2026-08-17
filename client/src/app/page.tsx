@@ -61,7 +61,6 @@ export default function HomePage() {
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
               <>
-                <Link href="/dashboard" className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10">Home</Link>
                 <button onClick={handleLogout} className="rounded-full border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10">Logout</button>
               </>
             ) : (

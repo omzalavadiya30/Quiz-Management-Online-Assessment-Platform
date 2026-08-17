@@ -2,12 +2,39 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const guardPage = async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+        if (!res.ok) {
+          router.push("/auth/login");
+          return;
+        }
+
+        const me = await res.json();
+        if (me?.user?.role !== "STUDENT") {
+          router.push(me?.user?.role === "ADMIN" ? "/admin/dashboard" : "/auth/login");
+          return;
+        }
+      } catch (error) {
+        toast.error("Unable to verify your access.");
+        router.push("/auth/login");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    guardPage();
+  }, [router]);
 
   const handleLogout = async () => {
     try {
@@ -29,6 +56,14 @@ export default function DashboardPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-950 text-white">
+        <div className="text-sm uppercase tracking-[0.25em] text-violet-300">Loading dashboard...</div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
       <div className="mx-auto max-w-6xl">
@@ -39,7 +74,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-200 transition hover:bg-white/10">Home</Link>
             <button
               type="button"
               onClick={handleLogout}

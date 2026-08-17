@@ -106,8 +106,9 @@ router.post("/login", [
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
     const normalizedEmail = normalizeEmail(email);
+    const selectedRole = role === "ADMIN" ? "ADMIN" : "STUDENT";
 
     try {
       const { data: user, error } = await supabase.from("users").select("id,name,email,password,role,status").eq("email", normalizedEmail).limit(1).maybeSingle();
@@ -119,6 +120,10 @@ router.post("/login", [
 
       if (user.status && user.status !== "ACTIVE") {
         return res.status(403).json({ message: "This account is not active" });
+      }
+
+      if (user.role !== selectedRole) {
+        return res.status(403).json({ message: `This email is registered as ${user.role.toLowerCase()}. Please select the correct role.` });
       }
 
       const isMatch = await bcrypt.compare(password, user.password);

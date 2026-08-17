@@ -10,7 +10,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", role: "STUDENT" });
   const [errors, setErrors] = useState({ name: "", email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -73,7 +73,7 @@ export default function RegisterPage() {
       }
 
       toast.success("Account created successfully.");
-      setForm({ name: "", email: "", password: "" });
+      setForm({ name: "", email: "", password: "", role: "STUDENT" });
       router.push("/auth/login");
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Something went wrong";
@@ -89,9 +89,9 @@ export default function RegisterPage() {
         <div className="relative hidden overflow-hidden bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.28),transparent_35%),linear-gradient(135deg,#0f172a_0%,#111827_100%)] p-12 lg:flex lg:flex-col lg:justify-between">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.25em] text-blue-200">Welcome</p>
-            <h1 className="mt-6 text-4xl font-bold text-white">Create your student account</h1>
+            <h1 className="mt-6 text-4xl font-bold text-white">Create your account</h1>
             <p className="mt-4 max-w-md text-lg text-slate-300">
-              Join the quiz platform and start taking assessments with secure login and a clean student dashboard experience.
+              Join the quiz platform and choose the role that matches your access level for secure login and dashboard flow.
             </p>
           </div>
 
@@ -108,6 +108,26 @@ export default function RegisterPage() {
               <p className="text-sm font-medium uppercase tracking-[0.25em] text-blue-300">Quiz platform</p>
               <h2 className="mt-2 text-3xl font-bold text-white">Register</h2>
             </div>
+          </div>
+
+          <div className="mb-6 grid grid-cols-2 gap-2 rounded-2xl border border-slate-700 bg-slate-950/60 p-1">
+            {[
+              { value: "STUDENT", label: "Student" },
+              { value: "ADMIN", label: "Admin" },
+            ].map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => setForm((prev) => ({ ...prev, role: option.value }))}
+                className={`rounded-xl px-3 py-2 text-sm font-medium transition ${
+                  form.role === option.value
+                    ? "bg-blue-500 text-white shadow-lg shadow-blue-500/20"
+                    : "text-slate-300 hover:text-white"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
