@@ -1,15 +1,25 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import AdminLayout from "@/components/layout/AdminLayout";
+import { Users, BarChart3, FileText, TrendingUp } from "lucide-react";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+interface AdminStats {
+  totalStudents: number;
+  totalQuizzes: number;
+  totalQuestions: number;
+  totalAttempts: number;
+  totalPassed: number;
+  totalFailed: number;
+}
+
 export default function AdminDashboardPage() {
   const router = useRouter();
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<AdminStats>({
     totalStudents: 0,
     totalQuizzes: 0,
     totalQuestions: 0,
@@ -17,6 +27,7 @@ export default function AdminDashboardPage() {
     totalPassed: 0,
     totalFailed: 0,
   });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadDashboard = async () => {
@@ -43,6 +54,8 @@ export default function AdminDashboardPage() {
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Unable to load dashboard");
         router.push("/auth/login");
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -69,74 +82,139 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const passRate = stats.totalAttempts > 0 ? Math.round((stats.totalPassed / stats.totalAttempts) * 100) : 0;
+
+  const statCards = [
+    {
+      label: "Total Students",
+      value: stats.totalStudents,
+      color: "from-sky-500/15 to-cyan-500/10",
+      icon: Users,
+      iconColor: "text-sky-300",
+      border: "border-sky-500/20",
+    },
+    {
+      label: "Active Quizzes",
+      value: stats.totalQuizzes,
+      color: "from-violet-500/15 to-fuchsia-500/10",
+      icon: BarChart3,
+      iconColor: "text-violet-300",
+      border: "border-violet-500/20",
+    },
+    {
+      label: "Questions",
+      value: stats.totalQuestions,
+      color: "from-emerald-500/15 to-green-500/10",
+      icon: FileText,
+      iconColor: "text-emerald-300",
+      border: "border-emerald-500/20",
+    },
+    {
+      label: "Pass Rate",
+      value: `${passRate}%`,
+      color: "from-amber-500/15 to-orange-500/10",
+      icon: TrendingUp,
+      iconColor: "text-amber-300",
+      border: "border-amber-500/20",
+    },
+  ];
+
   return (
-    <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
-      <div className="mx-auto max-w-7xl">
-        <nav className="mb-10 flex items-center justify-between rounded-2xl border border-white/10 bg-slate-900/80 p-4 shadow-xl shadow-slate-950/40">
-          <div>
-            <p className="text-xs uppercase tracking-[0.25em] text-violet-300">Admin portal</p>
-            <h1 className="mt-2 text-2xl font-bold text-white">Admin Dashboard</h1>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded-full bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-400"
-            >
-              Logout
-            </button>
-          </div>
-        </nav>
-
-        <section className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-          <div className="rounded-2xl border border-white/10 bg-slate-900 p-5">
-            <p className="text-sm text-slate-400">Total Students</p>
-            <h2 className="mt-3 text-3xl font-bold text-white">{stats.totalStudents}</h2>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-slate-900 p-5">
-            <p className="text-sm text-slate-400">Total Quizzes</p>
-            <h2 className="mt-3 text-3xl font-bold text-white">{stats.totalQuizzes}</h2>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-slate-900 p-5">
-            <p className="text-sm text-slate-400">Questions</p>
-            <h2 className="mt-3 text-3xl font-bold text-white">{stats.totalQuestions}</h2>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-slate-900 p-5">
-            <p className="text-sm text-slate-400">Quiz Attempts</p>
-            <h2 className="mt-3 text-3xl font-bold text-white">{stats.totalAttempts}</h2>
-          </div>
-        </section>
-
-        <section className="mt-10 grid gap-6 md:grid-cols-2">
-          <div className="rounded-2xl border border-white/10 bg-slate-900 p-6">
-            <h3 className="text-xl font-semibold text-white">Result Summary</h3>
-            <div className="mt-5 space-y-4 text-sm text-slate-300">
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <span>Passed</span>
-                <strong className="text-emerald-300">{stats.totalPassed}</strong>
-              </div>
-              <div className="flex items-center justify-between border-b border-white/10 pb-3">
-                <span>Failed</span>
-                <strong className="text-red-300">{stats.totalFailed}</strong>
-              </div>
-              <div className="flex items-center justify-between">
-                <span>Average score</span>
-                <strong className="text-violet-300">--</strong>
-              </div>
+    <AdminLayout onLogout={handleLogout}>
+      <div className="space-y-8">
+        <header className="space-y-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.32em] text-violet-300/90">Dashboard</p>
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h1 className="text-4xl font-black tracking-tight text-white md:text-5xl">Overview</h1>
             </div>
           </div>
+          <p className="max-w-2xl text-sm text-slate-400 md:text-base">
+            Welcome to your admin dashboard. Monitor all quiz activities and manage users with a focused overview.
+          </p>
+        </header>
 
-          <div className="rounded-2xl border border-white/10 bg-slate-900 p-6">
-            <h3 className="text-xl font-semibold text-white">Admin Controls</h3>
-            <div className="mt-5 space-y-3">
-              <button className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-slate-200 hover:bg-white/10">Manage students</button>
-              <button className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-slate-200 hover:bg-white/10">Manage quizzes</button>
-              <button className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-slate-200 hover:bg-white/10">View analytics</button>
-            </div>
+        {loading ? (
+          <div className="flex min-h-[260px] items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60">
+            <div className="text-sm font-medium uppercase tracking-[0.28em] text-violet-300">Loading dashboard...</div>
           </div>
-        </section>
+        ) : (
+          <>
+            <section className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+              {statCards.map(({ label, value, color, icon: Icon, iconColor, border }) => (
+                <article
+                  key={label}
+                  className={`rounded-3xl border bg-gradient-to-br ${color} p-5 shadow-[0_18px_40px_rgba(15,23,42,0.45)] ${border}`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm text-slate-300">{label}</p>
+                      <h2 className="mt-5 text-4xl font-black tracking-tight text-white">{value}</h2>
+                    </div>
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-slate-950/40">
+                      <Icon className={`${iconColor}`} size={28} />
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </section>
+
+            <section className="grid gap-5 lg:grid-cols-3">
+              <article className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-[0_18px_40px_rgba(15,23,42,0.35)]">
+                <h3 className="text-2xl font-bold text-white">Quiz Attempts</h3>
+                <p className="mt-1 text-sm text-slate-400">Total attempts made</p>
+
+                <div className="mt-8 space-y-5">
+                  <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-3">
+                    <span className="text-slate-300">Total Attempts</span>
+                    <strong className="text-2xl font-bold text-violet-300">{stats.totalAttempts}</strong>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-3">
+                    <span className="text-slate-300">Completed</span>
+                    <strong className="text-2xl font-bold text-emerald-300">{stats.totalPassed + stats.totalFailed}</strong>
+                  </div>
+                </div>
+              </article>
+
+              <article className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-[0_18px_40px_rgba(15,23,42,0.35)]">
+                <h3 className="text-2xl font-bold text-white">Performance</h3>
+                <p className="mt-1 text-sm text-slate-400">Student results</p>
+
+                <div className="mt-8 space-y-5">
+                  <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-3">
+                    <span className="text-slate-300">Passed</span>
+                    <strong className="text-2xl font-bold text-emerald-300">{stats.totalPassed}</strong>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-3">
+                    <span className="text-slate-300">Failed</span>
+                    <strong className="text-2xl font-bold text-red-300">{stats.totalFailed}</strong>
+                  </div>
+                </div>
+              </article>
+
+              <article className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 shadow-[0_18px_40px_rgba(15,23,42,0.35)]">
+                <h3 className="text-2xl font-bold text-white">Quick Stats</h3>
+                <p className="mt-1 text-sm text-slate-400">System overview</p>
+
+                <div className="mt-8 space-y-5">
+                  <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-3">
+                    <span className="text-slate-300">Avg Per Student</span>
+                    <strong className="text-2xl font-bold text-sky-300">
+                      {stats.totalStudents > 0 ? Math.round(stats.totalAttempts / stats.totalStudents) : 0}
+                    </strong>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-slate-950/40 px-4 py-3">
+                    <span className="text-slate-300">Active Rate</span>
+                    <strong className="text-2xl font-bold text-amber-300">
+                      {stats.totalStudents > 0 ? Math.round((stats.totalAttempts / (stats.totalStudents * 5)) * 100) : 0}%
+                    </strong>
+                  </div>
+                </div>
+              </article>
+            </section>
+          </>
+        )}
       </div>
-    </main>
+    </AdminLayout>
   );
 }

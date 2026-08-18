@@ -126,9 +126,12 @@
   }
   body {
     @apply min-h-screen bg-background text-foreground;
-    background-image: radial-gradient(circle at top, rgba(59, 130, 246, 0.14), transparent 25%), linear-gradient(135deg, #020817 0%, #0f172a 40%, #111827 100%);
+    background:
+      radial-gradient(circle at top, rgba(139, 92, 246, 0.16), transparent 24%),
+      radial-gradient(circle at right, rgba(59, 130, 246, 0.08), transparent 20%),
+      linear-gradient(180deg, #020b1a 0%, #020c1b 65%, #010814 100%);
   }
   ::selection {
-    background: rgba(96, 165, 250, 0.35);
+    background: rgba(168, 85, 247, 0.35);
   }
 }
