@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import toast from "react-hot-toast";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Users, BarChart3, FileText, TrendingUp } from "lucide-react";
 

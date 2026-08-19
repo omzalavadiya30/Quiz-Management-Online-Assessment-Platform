@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import toast from "react-hot-toast";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { Trash2, Edit2, Check, X } from "lucide-react";
 
@@ -143,7 +143,7 @@ export default function AdminUsersPage() {
         </header>
 
         {loading ? (
-          <div className="flex min-h-[260px] items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60">
+          <div className="flex min-h-65 items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60">
             <div className="text-sm font-medium uppercase tracking-[0.28em] text-violet-300">Loading users...</div>
           </div>
         ) : (

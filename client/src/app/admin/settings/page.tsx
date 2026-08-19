@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
+import toast from "react-hot-toast";
 import AdminLayout from "@/components/layout/AdminLayout";
 import { ShieldCheck, UserRoundPlus, CheckCircle2, Wrench } from "lucide-react";
 
