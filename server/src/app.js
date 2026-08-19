@@ -12,6 +12,7 @@ import leaderboardRouter from "./modules/leaderboard/index.js";
 import quizzesRouter from "./modules/quizzes/index.js";
 import categoriesRouter from "./modules/categories/index.js";
 import questionsRouter from "./modules/questions/index.js";
+import studentQuizzesRouter from "./modules/studentQuizzes/index.js";
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use("/api/leaderboard", leaderboardRouter);
 app.use("/api/quizzes", quizzesRouter);
 app.use("/api/categories", categoriesRouter);
 app.use("/api/questions", questionsRouter);
+app.use("/api/student/quizzes", studentQuizzesRouter);
 
 app.get("/api/health", (req, res) => {
     res.status(200).json({

@@ -24,8 +24,8 @@ export default function AdminLayout({ children, onLogout }: AdminLayoutProps) {
 
   return (
     <div className="min-h-screen bg-[#020b1a] text-slate-50">
-      <div className="mx-auto flex min-h-screen max-w-[1600px]">
-        <aside className="hidden w-[280px] flex-col justify-between border-r border-white/10 bg-[#071325]/80 px-5 py-7 shadow-[0_0_0_1px_rgba(148,163,184,0.08)] backdrop-blur-xl lg:flex">
+      <div className="min-h-screen">
+        <aside className="fixed inset-y-0 left-0 z-40 hidden w-[280px] flex-col justify-between overflow-y-auto border-r border-white/10 bg-[#071325]/95 px-5 py-7 shadow-[0_0_0_1px_rgba(148,163,184,0.08)] backdrop-blur-xl lg:flex">
           <div>
             <div className="mb-8 px-2">
               <p className="text-[10px] font-semibold uppercase tracking-[0.32em] text-violet-300/90">
@@ -77,7 +77,7 @@ export default function AdminLayout({ children, onLogout }: AdminLayoutProps) {
           </button>
         </aside>
 
-        <div className="flex-1">
+        <div className="min-h-screen min-w-0 lg:pl-[280px]">
           <header className="border-b border-white/10 bg-[#061224]/80 px-4 py-4 backdrop-blur-sm lg:hidden">
             <div className="flex items-center justify-between">
               <div>
@@ -96,7 +96,7 @@ export default function AdminLayout({ children, onLogout }: AdminLayoutProps) {
             </div>
           </header>
 
-          <main className="mx-auto max-w-[1280px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10">{children}</main>
+          <main className="mx-auto min-w-0 max-w-[1440px] px-4 py-6 sm:px-6 lg:px-8 lg:py-10">{children}</main>
         </div>
       </div>
     </div>

@@ -107,7 +107,7 @@ export default function DashboardPage() {
           <div className="rounded-2xl border border-white/10 bg-slate-900 p-6">
             <h3 className="text-xl font-semibold text-white">Quick actions</h3>
             <div className="mt-5 space-y-3">
-              <button className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-slate-200 hover:bg-white/10">Create new quiz</button>
+              <Link href="/student/quizzes" className="block w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-slate-200 hover:bg-white/10">Browse published quizzes</Link>
               <button className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-slate-200 hover:bg-white/10">Manage categories</button>
               <button className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-left text-slate-200 hover:bg-white/10">View student results</button>
             </div>
