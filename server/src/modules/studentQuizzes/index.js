@@ -19,6 +19,47 @@ function ownedAttempt(id, studentId) {
   return attempt && attempt.studentId === studentId ? attempt : null;
 }
 
+function calculateResult(attempt, submittedAt, reason) {
+  const answers = attempt.answers || {};
+  const totalQuestions = attempt.scoringQuestions.length;
+  const totalMarks = attempt.scoringQuestions.reduce((sum, question) => sum + Number(question.marks || 0), 0);
+  let correctAnswers = 0;
+  let obtainedMarks = 0;
+
+  attempt.scoringQuestions.forEach((question) => {
+    const correctOption = question.options.find((option) => option.is_correct);
+    if (answers[question.id] && answers[question.id] === correctOption?.id) {
+      correctAnswers += 1;
+      obtainedMarks += Number(question.marks || 0);
+    }
+  });
+
+  const answeredQuestionIds = Object.keys(answers);
+  const incorrectAnswers = answeredQuestionIds.filter((questionId) => {
+    const question = attempt.scoringQuestions.find((item) => item.id === questionId);
+    return question && answers[questionId] !== question.options.find((option) => option.is_correct)?.id;
+  }).length;
+  const unanswered = totalQuestions - answeredQuestionIds.length;
+  const percentage = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
+  const submittedTime = Date.parse(submittedAt);
+
+  return {
+    attempt_id: attempt.id,
+    quiz: attempt.quiz,
+    submitted_at: submittedAt,
+    submission_reason: reason,
+    total_questions: totalQuestions,
+    correct_answers: correctAnswers,
+    incorrect_answers: incorrectAnswers,
+    unanswered,
+    total_marks: totalMarks,
+    obtained_marks: obtainedMarks,
+    percentage,
+    status: percentage >= Number(attempt.passingScore) ? "PASSED" : "FAILED",
+    time_taken_seconds: Math.max(0, Math.floor((submittedTime - Date.parse(attempt.startedAt)) / 1000)),
+  };
+}
+
 router.get("/", verifyToken, requireStudent, async (req, res) => {
   try {
     let query = supabase.from("quizzes").select(publicQuizSelect).eq("status", "PUBLISHED").order("created_at", { ascending: false });
@@ -53,6 +94,27 @@ router.patch("/attempts/:attemptId/answers", verifyToken, requireStudent, (req, 
   return res.status(200).json({ message: "Answer saved", answers: attempt.answers });
 });
 
+router.post("/attempts/:attemptId/submit", verifyToken, requireStudent, (req, res) => {
+  const attempt = ownedAttempt(req.params.attemptId, req.user.id);
+  if (!attempt) return res.status(404).json({ message: "Quiz attempt not found" });
+  if (attempt.submitted) return res.status(409).json({ message: "This quiz attempt has already been submitted", result: attempt.result });
+
+  const submittedAt = new Date();
+  const expired = submittedAt.getTime() >= Date.parse(attempt.expiresAt);
+  const result = calculateResult(attempt, submittedAt.toISOString(), expired ? "TIME_EXPIRED" : "MANUAL");
+  attempt.submitted = true;
+  attempt.result = result;
+
+  return res.status(200).json({ message: expired ? "Quiz submitted automatically" : "Quiz submitted successfully", result });
+});
+
+router.get("/attempts/:attemptId/result", verifyToken, requireStudent, (req, res) => {
+  const attempt = ownedAttempt(req.params.attemptId, req.user.id);
+  if (!attempt) return res.status(404).json({ message: "Quiz attempt not found" });
+  if (!attempt.result) return res.status(409).json({ message: "This quiz has not been submitted yet" });
+  return res.status(200).json({ result: attempt.result });
+});
+
 router.get("/:id", verifyToken, requireStudent, async (req, res) => {
   try {
     const quiz = await getPublishedQuiz(req.params.id);
@@ -79,7 +141,7 @@ router.post("/:id/start", verifyToken, requireStudent, async (req, res) => {
     const startedAt = new Date();
     const expiresAt = new Date(startedAt.getTime() + durationMinutes * 60 * 1000);
     const safeQuestions = questions.map(({ options, ...question }) => ({ ...question, options: (options || []).map(({ is_correct, ...option }) => option) }));
-    const attempt = { id: crypto.randomUUID(), quizId: quiz.id, studentId: req.user.id, quiz: { id: quiz.id, title: quiz.title, duration: durationMinutes }, startedAt: startedAt.toISOString(), expiresAt: expiresAt.toISOString(), questions: safeQuestions, answers: {} };
+    const attempt = { id: crypto.randomUUID(), quizId: quiz.id, studentId: req.user.id, passingScore: quiz.passing_score, quiz: { id: quiz.id, title: quiz.title, duration: durationMinutes }, startedAt: startedAt.toISOString(), expiresAt: expiresAt.toISOString(), questions: safeQuestions, scoringQuestions: questions, answers: {} };
     attempts.set(attempt.id, attempt);
     return res.status(201).json({ attempt: { id: attempt.id, quiz: attempt.quiz, started_at: attempt.startedAt, expires_at: attempt.expiresAt, questions: attempt.questions, answers: attempt.answers } });
   } catch (error) {
