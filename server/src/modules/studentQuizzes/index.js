@@ -1,4 +1,3 @@
-import crypto from "crypto";
 import express from "express";
 import supabase from "../../config/supabase.js";
 import { verifyToken, requireStudent } from "../../middleware/auth.js";
@@ -7,6 +6,38 @@ const router = express.Router();
 const attempts = new Map();
 const publicQuizSelect = "id,title,description,category_id,difficulty,duration,passing_score,max_attempts,status,created_at,categories(name)";
 const questionSelect = "id,quiz_id,question_text,explanation,marks,difficulty,options(id,option_text,is_correct)";
+
+export function dashboardForStudent(studentId) {
+  const completedAttempts = Array.from(attempts.values())
+    .filter((attempt) => attempt.studentId === studentId && attempt.result)
+    .sort((first, second) => Date.parse(second.result.submitted_at) - Date.parse(first.result.submitted_at));
+  const scores = completedAttempts.map((attempt) => attempt.result.percentage);
+  const totalQuestionsAnswered = completedAttempts.reduce((total, attempt) => total + attempt.result.review.filter((item) => item.selected_answer).length, 0);
+
+  return {
+    stats: {
+      totalQuizzesAttempted: completedAttempts.length,
+      totalQuizzesPassed: completedAttempts.filter((attempt) => attempt.result.status === "PASSED").length,
+      totalQuizzesFailed: completedAttempts.filter((attempt) => attempt.result.status === "FAILED").length,
+      averageScore: scores.length ? Math.round(scores.reduce((total, score) => total + score, 0) / scores.length) : 0,
+      highestScore: scores.length ? Math.max(...scores) : 0,
+      totalQuestionsAnswered,
+    },
+    recentAttempts: completedAttempts.slice(0, 5).map((attempt) => ({
+      attempt_id: attempt.result.attempt_id,
+      quiz: attempt.result.quiz,
+      percentage: attempt.result.percentage,
+      status: attempt.result.status,
+      correct_answers: attempt.result.correct_answers,
+      total_questions: attempt.result.total_questions,
+      submitted_at: attempt.result.submitted_at,
+    })),
+    performance: completedAttempts.slice(0, 7).reverse().map((attempt, index) => ({
+      label: `Attempt ${index + 1}`,
+      score: attempt.result.percentage,
+    })),
+  };
+}
 
 async function getPublishedQuiz(id) {
   const { data, error } = await supabase.from("quizzes").select(publicQuizSelect).eq("id", id).eq("status", "PUBLISHED").maybeSingle();
@@ -90,7 +121,11 @@ router.get("/", verifyToken, requireStudent, async (req, res) => {
   }
 });
 
-router.patch("/attempts/:attemptId/answers", verifyToken, requireStudent, (req, res) => {
+router.get("/dashboard", verifyToken, requireStudent, (req, res) => {
+  return res.status(200).json(dashboardForStudent(req.user.id));
+});
+
+router.patch("/attempts/:attemptId/answers", verifyToken, requireStudent, async (req, res) => {
   const attempt = ownedAttempt(req.params.attemptId, req.user.id);
   if (!attempt) return res.status(404).json({ message: "Quiz attempt not found" });
   if (Date.now() >= Date.parse(attempt.expiresAt)) return res.status(410).json({ message: "This quiz attempt has expired" });
@@ -100,10 +135,20 @@ router.patch("/attempts/:attemptId/answers", verifyToken, requireStudent, (req, 
   if (!question) return res.status(400).json({ message: "Question does not belong to this attempt" });
   if (!question.options.some((option) => option.id === optionId)) return res.status(400).json({ message: "Option does not belong to this question" });
   attempt.answers[questionId] = optionId;
-  return res.status(200).json({ message: "Answer saved", answers: attempt.answers });
+  try {
+    const { data: existing, error: lookupError } = await supabase.from("answers").select("id").eq("attempt_id", attempt.id).eq("question_id", questionId).maybeSingle();
+    if (lookupError) throw lookupError;
+    const payload = { attempt_id: attempt.id, question_id: questionId, selected_option_id: optionId, is_correct: question.options.find((option) => option.id === optionId)?.is_correct === true };
+    const { error } = existing ? await supabase.from("answers").update(payload).eq("id", existing.id) : await supabase.from("answers").insert(payload);
+    if (error) throw error;
+    return res.status(200).json({ message: "Answer saved", answers: attempt.answers });
+  } catch (error) {
+    console.error("Save student answer error:", error);
+    return res.status(500).json({ message: "Unable to save answer" });
+  }
 });
 
-router.post("/attempts/:attemptId/submit", verifyToken, requireStudent, (req, res) => {
+router.post("/attempts/:attemptId/submit", verifyToken, requireStudent, async (req, res) => {
   const attempt = ownedAttempt(req.params.attemptId, req.user.id);
   if (!attempt) return res.status(404).json({ message: "Quiz attempt not found" });
   if (attempt.submitted) return res.status(409).json({ message: "This quiz attempt has already been submitted", result: attempt.result });
@@ -113,8 +158,16 @@ router.post("/attempts/:attemptId/submit", verifyToken, requireStudent, (req, re
   const result = calculateResult(attempt, submittedAt.toISOString(), expired ? "TIME_EXPIRED" : "MANUAL");
   attempt.submitted = true;
   attempt.result = result;
-
-  return res.status(200).json({ message: expired ? "Quiz submitted automatically" : "Quiz submitted successfully", result });
+  try {
+    const { error } = await supabase.from("attempts").update({ score: result.obtained_marks, percentage: result.percentage, correct_answers: result.correct_answers, incorrect_answers: result.incorrect_answers, unanswered: result.unanswered, time_taken: result.time_taken_seconds, status: "COMPLETED", completed_at: result.submitted_at }).eq("id", attempt.id).eq("user_id", req.user.id);
+    if (error) throw error;
+    return res.status(200).json({ message: expired ? "Quiz submitted automatically" : "Quiz submitted successfully", result });
+  } catch (error) {
+    attempt.submitted = false;
+    attempt.result = null;
+    console.error("Submit student quiz error:", error);
+    return res.status(500).json({ message: "Unable to submit quiz" });
+  }
 });
 
 router.get("/attempts/:attemptId/result", verifyToken, requireStudent, (req, res) => {
@@ -165,7 +218,9 @@ router.post("/:id/start", verifyToken, requireStudent, async (req, res) => {
     const startedAt = new Date();
     const expiresAt = new Date(startedAt.getTime() + durationMinutes * 60 * 1000);
     const safeQuestions = questions.map(({ options, ...question }) => ({ ...question, options: (options || []).map(({ is_correct, ...option }) => option) }));
-    const attempt = { id: crypto.randomUUID(), quizId: quiz.id, studentId: req.user.id, passingScore: quiz.passing_score, quiz: { id: quiz.id, title: quiz.title, duration: durationMinutes }, startedAt: startedAt.toISOString(), expiresAt: expiresAt.toISOString(), questions: safeQuestions, scoringQuestions: questions, answers: {} };
+    const { data: savedAttempt, error: attemptError } = await supabase.from("attempts").insert({ quiz_id: quiz.id, user_id: req.user.id, status: "IN_PROGRESS", started_at: startedAt.toISOString() }).select("id").single();
+    if (attemptError) throw attemptError;
+    const attempt = { id: savedAttempt.id, quizId: quiz.id, studentId: req.user.id, passingScore: quiz.passing_score, quiz: { id: quiz.id, title: quiz.title, duration: durationMinutes }, startedAt: startedAt.toISOString(), expiresAt: expiresAt.toISOString(), questions: safeQuestions, scoringQuestions: questions, answers: {} };
     attempts.set(attempt.id, attempt);
     return res.status(201).json({ attempt: { id: attempt.id, quiz: attempt.quiz, started_at: attempt.startedAt, expires_at: attempt.expiresAt, questions: attempt.questions, answers: attempt.answers } });
   } catch (error) {

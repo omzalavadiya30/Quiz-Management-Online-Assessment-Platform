@@ -6,13 +6,11 @@ const router = express.Router();
 
 router.get("/dashboard", verifyToken, requireAdmin, async (req, res) => {
   try {
-    const [{ count: totalStudents }, { count: totalQuizzes }, { count: totalQuestions }, { count: totalAttempts }, { count: totalPassed }, { count: totalFailed }] = await Promise.all([
+    const [{ count: totalStudents }, { count: totalQuizzes }, { count: totalQuestions }, { count: totalAttempts }] = await Promise.all([
       supabase.from("users").select("id", { count: "exact", head: true }).eq("role", "STUDENT"),
       supabase.from("quizzes").select("id", { count: "exact", head: true }),
       supabase.from("questions").select("id", { count: "exact", head: true }),
-      supabase.from("quiz_attempts").select("id", { count: "exact", head: true }),
-      supabase.from("results").select("id", { count: "exact", head: true }).eq("passed", true),
-      supabase.from("results").select("id", { count: "exact", head: true }).eq("passed", false),
+      supabase.from("attempts").select("id", { count: "exact", head: true }),
     ]);
 
     return res.status(200).json({
@@ -21,8 +19,8 @@ router.get("/dashboard", verifyToken, requireAdmin, async (req, res) => {
         totalQuizzes: totalQuizzes ?? 0,
         totalQuestions: totalQuestions ?? 0,
         totalAttempts: totalAttempts ?? 0,
-        totalPassed: totalPassed ?? 0,
-        totalFailed: totalFailed ?? 0,
+        totalPassed: 0,
+        totalFailed: 0,
       },
     });
   } catch (error) {
@@ -34,7 +32,7 @@ router.get("/dashboard", verifyToken, requireAdmin, async (req, res) => {
 router.get("/attempts", verifyToken, requireAdmin, async (req, res) => {
   try {
     const { data, error } = await supabase
-      .from("quiz_attempts")
+      .from("attempts")
       .select("*, users(name,email), quizzes(title)")
       .order("started_at", { ascending: false });
 

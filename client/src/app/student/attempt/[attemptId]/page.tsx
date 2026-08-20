@@ -83,5 +83,69 @@ export default function StudentAttemptPage() {
   if (loading) return <main className="flex min-h-screen items-center justify-center bg-[#020b1a] text-violet-300">Loading attempt...</main>;
   if (!attempt || !question) return <main className="flex min-h-screen items-center justify-center bg-[#020b1a] text-slate-400">Attempt not found.</main>;
 
-  return <main className="min-h-screen bg-[#020b1a] px-4 py-6 text-white sm:px-6 lg:px-10"><div className="mx-auto max-w-5xl"><header className="mb-6 flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/70 p-5 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs uppercase tracking-[0.28em] text-violet-300">Active assessment</p><h1 className="mt-1 text-2xl font-black">{attempt.quiz.title}</h1></div><div className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 font-mono text-lg font-bold ${remaining < 60 ? "bg-red-500/20 text-red-300" : "bg-violet-500/15 text-violet-200"}`}><Clock3 size={19} /> {timeLabel}</div></header><div className="grid gap-6 lg:grid-cols-[220px_1fr]"><aside className="rounded-3xl border border-white/10 bg-slate-900/60 p-4"><div className="mb-4 flex items-center justify-between"><span className="text-sm font-semibold">Questions</span><span className="text-xs text-slate-500">{answeredCount}/{attempt.questions.length}</span></div><div className="grid grid-cols-5 gap-2 lg:grid-cols-3">{attempt.questions.map((item, index) => <button key={item.id} onClick={() => setCurrentIndex(index)} className={`relative flex h-10 items-center justify-center rounded-xl text-sm font-semibold transition ${index === currentIndex ? "bg-violet-500 text-white" : answers[item.id] ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-950/60 text-slate-400 hover:text-white"}`}>{index + 1}{answers[item.id] && <Check className="absolute -right-1 -top-1 rounded-full bg-emerald-400 p-0.5 text-slate-950" size={13} />}</button>)}</div></aside><section className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 sm:p-8"><div className="flex items-center justify-between text-sm text-slate-400"><span>Question {currentIndex + 1} of {attempt.questions.length}</span><span>{question.marks} mark{question.marks === 1 ? "" : "s"}</span></div><h2 className="mt-8 text-2xl font-bold leading-9 text-white">{question.question_text}</h2><div className="mt-8 space-y-3">{question.options.map((option, index) => <button key={option.id} onClick={() => selectAnswer(option.id)} className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition ${answers[question.id] === option.id ? "border-violet-400 bg-violet-500/15 text-white" : "border-white/10 bg-slate-950/40 text-slate-300 hover:border-violet-400/40 hover:bg-white/5"}`}><span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-sm font-bold">{String.fromCharCode(65 + index)}</span><span>{option.option_text}</span></button>)}</div><div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5"><button onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))} disabled={currentIndex === 0} className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-30"><ChevronLeft size={17} /> Previous</button><div className="flex gap-3"><button onClick={() => submitQuiz()} disabled={submitting || submitted || !timerReady} className="rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-400 disabled:opacity-50">{submitting ? "Submitting..." : "Submit quiz"}</button><button onClick={() => setCurrentIndex((index) => Math.min(attempt.questions.length - 1, index + 1))} disabled={currentIndex === attempt.questions.length - 1} className="inline-flex items-center gap-2 rounded-xl bg-violet-500 px-4 py-3 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-30">Next <ChevronRight size={17} /></button></div></div></section></div></div></main>;
+  return (
+    <main className="min-h-screen bg-[#020b1a] px-4 py-6 text-white sm:px-6 lg:px-10">
+      <div className="mx-auto max-w-5xl">
+        <header className="mb-6 flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/70 p-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.28em] text-violet-300">Active assessment</p>
+            <h1 className="mt-1 text-2xl font-black">{attempt.quiz.title}</h1>
+          </div>
+          <div className={`inline-flex items-center gap-2 rounded-xl px-4 py-3 font-mono text-lg font-bold ${remaining < 60 ? "bg-red-500/20 text-red-300" : "bg-violet-500/15 text-violet-200"}`}>
+            <Clock3 size={19} /> {timeLabel}
+          </div>
+        </header>
+        <div className="grid gap-6 lg:grid-cols-[220px_1fr]">
+          <aside className="rounded-3xl border border-white/10 bg-slate-900/60 p-4">
+            <div className="mb-4 flex items-center justify-between">
+              <span className="text-sm font-semibold">Questions</span>
+              <span className="text-xs text-slate-500">{answeredCount}/{attempt.questions.length}</span>
+            </div>
+            <div className="grid grid-cols-5 gap-2 lg:grid-cols-3">
+              {
+                attempt.questions.map((item, index) => (
+                  <button key={item.id} onClick={() => setCurrentIndex(index)} className={`relative flex h-10 items-center justify-center rounded-xl text-sm font-semibold transition ${index === currentIndex ? "bg-violet-500 text-white" : answers[item.id] ? "bg-emerald-500/20 text-emerald-300" : "bg-slate-950/60 text-slate-400 hover:text-white"}`}>
+                    {index + 1}{answers[item.id] && <Check className="absolute -right-1 -top-1 rounded-full bg-emerald-400 p-0.5 text-slate-950" size={13} />}
+                  </button>
+                )) 
+              }
+            </div>
+          </aside>
+        
+          <section className="rounded-3xl border border-white/10 bg-slate-900/60 p-6 sm:p-8">
+            <div className="flex items-center justify-between text-sm text-slate-400">
+              <span>Question {currentIndex + 1} of {attempt.questions.length}</span>
+              <span>{question.marks} mark{question.marks === 1 ? "" : "s"}</span>
+            </div>
+            <h2 className="mt-8 text-2xl font-bold leading-9 text-white">{question.question_text}</h2>
+            <div className="mt-8 space-y-3">
+              {
+                question.options.map((option, index) => (
+                  <button key={option.id} onClick={() => selectAnswer(option.id)} className={`flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition ${answers[question.id] === option.id ? "border-violet-400 bg-violet-500/15 text-white" : "border-white/10 bg-slate-950/40 text-slate-300 hover:border-violet-400/40 hover:bg-white/5"}`}>
+                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white/10 text-sm font-bold">
+                      {String.fromCharCode(65 + index)}
+                    </span>
+                    <span>{option.option_text}</span>
+                  </button>
+                ))
+              }
+            </div>
+            <div className="mt-10 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
+              <button onClick={() => setCurrentIndex((index) => Math.max(0, index - 1))} disabled={currentIndex === 0} className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-3 text-sm text-slate-300 hover:bg-white/5 disabled:opacity-30">
+                <ChevronLeft size={17} /> Previous
+              </button>
+              <div className="flex gap-3">
+                <button onClick={() => submitQuiz()} disabled={submitting || submitted || !timerReady} className="rounded-xl bg-emerald-500 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-400 disabled:opacity-50">
+                  {submitting ? "Submitting..." : "Submit quiz"}
+                </button>
+                <button onClick={() => setCurrentIndex((index) => Math.min(attempt.questions.length - 1, index + 1))} disabled={currentIndex === attempt.questions.length - 1} className="inline-flex items-center gap-2 rounded-xl bg-violet-500 px-4 py-3 text-sm font-semibold text-white hover:bg-violet-400 disabled:opacity-30">
+                  Next <ChevronRight size={17} />
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  ) 
 }
