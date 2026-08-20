@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Users, BarChart3, Settings, LogOut, Sparkles, FileText, FolderKanban, ListChecks } from "lucide-react";
+import { Users, BarChart3, Settings, LogOut, Sparkles, FileText, FolderKanban, ListChecks, ChartNoAxesCombined } from "lucide-react";
 import { ReactNode } from "react";
 
 interface AdminLayoutProps {
@@ -15,6 +15,7 @@ export default function AdminLayout({ children, onLogout }: AdminLayoutProps) {
 
   const navItems = [
     { href: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
+    { href: "/admin/analytics", label: "Analytics", icon: ChartNoAxesCombined },
     { href: "/admin/quizzes", label: "Quizzes", icon: FileText },
     { href: "/admin/categories", label: "Categories", icon: FolderKanban },
     { href: "/admin/questions", label: "Questions", icon: ListChecks },
