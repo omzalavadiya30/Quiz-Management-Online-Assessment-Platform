@@ -6,7 +6,7 @@ import { verifyToken, requireStudent } from "../../middleware/auth.js";
 const router = express.Router();
 const attempts = new Map();
 const publicQuizSelect = "id,title,description,category_id,difficulty,duration,passing_score,max_attempts,status,created_at,categories(name)";
-const questionSelect = "id,quiz_id,question_text,marks,difficulty,options(id,option_text,is_correct)";
+const questionSelect = "id,quiz_id,question_text,explanation,marks,difficulty,options(id,option_text,is_correct)";
 
 async function getPublishedQuiz(id) {
   const { data, error } = await supabase.from("quizzes").select(publicQuizSelect).eq("id", id).eq("status", "PUBLISHED").maybeSingle();
@@ -42,6 +42,20 @@ function calculateResult(attempt, submittedAt, reason) {
   const unanswered = totalQuestions - answeredQuestionIds.length;
   const percentage = totalMarks > 0 ? Math.round((obtainedMarks / totalMarks) * 100) : 0;
   const submittedTime = Date.parse(submittedAt);
+  const review = attempt.scoringQuestions.map((question, index) => {
+    const selectedOption = question.options.find((option) => option.id === answers[question.id]);
+    const correctOption = question.options.find((option) => option.is_correct);
+
+    return {
+      question_number: index + 1,
+      question_id: question.id,
+      question: question.question_text,
+      selected_answer: selectedOption?.option_text || null,
+      correct_answer: correctOption?.option_text || null,
+      is_correct: Boolean(selectedOption && selectedOption.id === correctOption?.id),
+      explanation: question.explanation || "No explanation was provided for this question.",
+    };
+  });
 
   return {
     attempt_id: attempt.id,
@@ -57,6 +71,7 @@ function calculateResult(attempt, submittedAt, reason) {
     percentage,
     status: percentage >= Number(attempt.passingScore) ? "PASSED" : "FAILED",
     time_taken_seconds: Math.max(0, Math.floor((submittedTime - Date.parse(attempt.startedAt)) / 1000)),
+    review,
   };
 }
 
@@ -73,12 +88,6 @@ router.get("/", verifyToken, requireStudent, async (req, res) => {
     console.error("Student quiz listing error:", error);
     return res.status(500).json({ message: "Unable to fetch published quizzes" });
   }
-});
-
-router.get("/attempts/:attemptId", verifyToken, requireStudent, (req, res) => {
-  const attempt = ownedAttempt(req.params.attemptId, req.user.id);
-  if (!attempt) return res.status(404).json({ message: "Quiz attempt not found" });
-  return res.status(200).json({ attempt: { id: attempt.id, quiz: attempt.quiz, started_at: attempt.startedAt, expires_at: attempt.expiresAt, questions: attempt.questions, answers: attempt.answers } });
 });
 
 router.patch("/attempts/:attemptId/answers", verifyToken, requireStudent, (req, res) => {
@@ -113,6 +122,21 @@ router.get("/attempts/:attemptId/result", verifyToken, requireStudent, (req, res
   if (!attempt) return res.status(404).json({ message: "Quiz attempt not found" });
   if (!attempt.result) return res.status(409).json({ message: "This quiz has not been submitted yet" });
   return res.status(200).json({ result: attempt.result });
+});
+
+router.get("/attempts/history", verifyToken, requireStudent, (req, res) => {
+  const history = Array.from(attempts.values())
+    .filter((attempt) => attempt.studentId === req.user.id && attempt.result)
+    .sort((first, second) => Date.parse(second.result.submitted_at) - Date.parse(first.result.submitted_at))
+    .map((attempt) => attempt.result);
+
+  return res.status(200).json({ history });
+});
+
+router.get("/attempts/:attemptId", verifyToken, requireStudent, (req, res) => {
+  const attempt = ownedAttempt(req.params.attemptId, req.user.id);
+  if (!attempt) return res.status(404).json({ message: "Quiz attempt not found" });
+  return res.status(200).json({ attempt: { id: attempt.id, quiz: attempt.quiz, started_at: attempt.startedAt, expires_at: attempt.expiresAt, questions: attempt.questions, answers: attempt.answers } });
 });
 
 router.get("/:id", verifyToken, requireStudent, async (req, res) => {

@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
         </header>
 
         {loading ? (
-          <div className="flex min-h-[260px] items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60">
+          <div className="flex min-h-65 items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60">
             <div className="text-sm font-medium uppercase tracking-[0.28em] text-violet-300">Loading dashboard...</div>
           </div>
         ) : (
@@ -144,7 +144,7 @@ export default function AdminDashboardPage() {
               {statCards.map(({ label, value, color, icon: Icon, iconColor, border }) => (
                 <article
                   key={label}
-                  className={`rounded-3xl border bg-gradient-to-br ${color} p-5 shadow-[0_18px_40px_rgba(15,23,42,0.45)] ${border}`}
+                  className={`rounded-3xl border bg-linear-to-br ${color} p-5 shadow-[0_18px_40px_rgba(15,23,42,0.45)] ${border}`}
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div>

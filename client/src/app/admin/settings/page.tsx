@@ -113,7 +113,7 @@ export default function AdminSettingsPage() {
         </header>
 
         {loading ? (
-          <div className="flex min-h-[260px] items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60">
+          <div className="flex min-h-65 items-center justify-center rounded-3xl border border-white/10 bg-slate-900/60">
             <div className="text-sm font-medium uppercase tracking-[0.28em] text-violet-300">Loading settings...</div>
           </div>
         ) : (
